@@ -1,0 +1,6 @@
+/*C2*/SET SCHEMA PUBLIC
+CREATE TABLE logpas (login varchar(20), pass varchar(20))
+ROLLBACK
+ROLLBACK
+INSERT INTO LOGPAS VALUES('root','rooter')
+COMMIT
