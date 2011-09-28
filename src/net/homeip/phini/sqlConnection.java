@@ -7,15 +7,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/**
+ * Klasa realizująca połączenie z bazą danych hyperSQL, autoryzacje klienta,
+ * tworzenie bazy danych i tabel oraz wstawianie niezbędnych danych do tabel.
+ * 
+ * @author Arkadiusz Wiesner
+ * 
+ */
 public class sqlConnection {
 
 	private Connection conn;
 	private Statement st;
 
-	public sqlConnection() {
-
-	}
-
+	/**
+	 * Metoda realizująca połączenie z bazą danych(jeśli baza danych nie
+	 * istnieje to metoda wywołuje metodę createDb() w celu stworzenia bazy
+	 * danych)
+	 */
 	public void connect() {
 		try {
 			Class.forName("org.hsqldb.jdbc.JDBCDriver");
@@ -38,6 +46,10 @@ public class sqlConnection {
 
 	}
 
+	/**
+	 * Metoda tworząca baze danych oraz tabele oraz wstawiająca podstawowe dane
+	 * do tabel.
+	 */
 	private void createDb() {
 		try {
 			conn = DriverManager.getConnection(
@@ -68,6 +80,15 @@ public class sqlConnection {
 		System.out.println("[II] Data was inserted successfuly.");
 	}
 
+	/**
+	 * Metoda realizująca autoryzację użytkownika wedle podanego loginu i hasła
+	 * 
+	 * @param l
+	 *            login użytkownika
+	 * @param p
+	 *            hasło użytkownika
+	 * @return boolean - true jeśli zalogowano, false w przeciwnym wypadku
+	 */
 	public boolean auth(String l, String p) {
 
 		String recLogin = "";
@@ -100,6 +121,14 @@ public class sqlConnection {
 			return false;
 	}
 
+	/**
+	 * Metoda sprawdzająca czy podany użytkownik istnieje w tabeli 'logpas'
+	 * przechowującej dane o użytkownikach
+	 * 
+	 * @param login
+	 *            String - login użytkownika
+	 * @return boolean - true jeśli istnieje, false w przeciwnym wypadku
+	 */
 	public boolean userExists(String login) {
 		String sql = "SELECT login FROM logpas WHERE login='" + login + "';";
 
@@ -125,6 +154,9 @@ public class sqlConnection {
 		return false;
 	}
 
+	/**
+	 * Metoda realizująca rozłączenie z bazą danych
+	 */
 	public void disconnect() {
 		try {
 			st.close();

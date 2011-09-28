@@ -4,12 +4,30 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import org.jdom.*;
+
+import org.jdom.Attribute;
+import org.jdom.Document;
+import org.jdom.Element;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 
+/**
+ * Klasa realizująca tworzenie wiadomości typu LOG jako odpowiedzi serwera.
+ * 
+ * @author Arkadiusz Wiesner
+ * 
+ */
 public class xmlMsgs {
 
+	/**
+	 * Statyczna metoda, której zadaniem jest tworzenie wiadomości typu LOG z
+	 * zadanym tekstem
+	 * 
+	 * @param msg
+	 *            treść wiadomości: 1) LOGGED gdy zalogowano 2) ERROR Gdy
+	 *            wystąpił bład logowania
+	 * @return Zwraca ciąg znakowy reprezentujący wiadomość w formacie XML
+	 */
 	public static String createAuthMsg(String msg) {
 
 		StringWriter sw = new StringWriter();
@@ -24,7 +42,7 @@ public class xmlMsgs {
 		message.addContent(new Element("content").setText(msg));
 		XMLOutputter xmlOut = new XMLOutputter(Format.getPrettyFormat());
 
-		//String out = null;
+		// String out = null;
 
 		try {
 			xmlOut.output(doc, sw);

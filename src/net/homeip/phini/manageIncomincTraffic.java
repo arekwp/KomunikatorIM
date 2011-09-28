@@ -17,6 +17,13 @@ import org.jdom.input.SAXBuilder;
 import org.jdom.output.Format;
 import org.jdom.output.XMLOutputter;
 
+/**
+ * Klasa zajmująca się przetwarzaniem odebranych wiadomości w zależności od ich
+ * typu. Obsługiwane typu wiadomości: 1) MSG 2) CONTACTS 3) LOG 4) END
+ * 
+ * @author Arek Wiesner
+ * 
+ */
 public class manageIncomincTraffic extends Thread {
 
 	private Socket inSocket;
@@ -29,6 +36,21 @@ public class manageIncomincTraffic extends Thread {
 	private String doc;
 	private Document xmlDoc;
 
+	/**
+	 * Konstruktor klasy zajmujący się ustalaniem wartości pól dla wiadomości
+	 * typu LOG
+	 * 
+	 * @param type
+	 *            Typ przychodzącej wiadomości
+	 * @param pass
+	 *            Hasło logowania
+	 * @param c
+	 *            Gniazdo połączenia
+	 * @param sqlConn
+	 *            Połaczenie z bazą danych
+	 * @param cList
+	 *            Lista zalogowanych(aktywnych) użytkowników
+	 */
 	public manageIncomincTraffic(String type, String pass, Client c,
 			sqlConnection sqlConn, ClientList cList) {
 		super("LOG thread");
@@ -48,6 +70,18 @@ public class manageIncomincTraffic extends Thread {
 		}
 	}
 
+	/**
+	 * Konstruktor klasy zajmujący się ustalaniem wartości pól dla wiadomości
+	 * MSG
+	 * 
+	 * @param type
+	 *            Typ wiadomości
+	 * @param doc
+	 *            Ciąg znakowy(string) zawierający treść przesyłanej wiadomości
+	 *            w formie XML
+	 * @param cList
+	 *            Lista zalogowanych(aktywnych) użytkowników
+	 */
 	public manageIncomincTraffic(String type, String doc, ClientList cList) {
 		super("MSG thread");
 		System.out.println("Managing MSG");
@@ -56,6 +90,17 @@ public class manageIncomincTraffic extends Thread {
 		this.doc = doc;
 	}
 
+	/**
+	 * Konstruktor klasy zajmujący się ustalaniem wartości pól dla wiadomości
+	 * CONTACTS
+	 * 
+	 * @param type
+	 *            Typ wiadomości
+	 * @param doc
+	 *            Obiekt typu Document zawierający przesyłaną wiadomość jako XML
+	 * @param cList
+	 *            Lista zalogowanych(aktywnych) użytkowników
+	 */
 	public manageIncomincTraffic(String type, Document doc, ClientList cList) {
 		super("CONTACTS thread");
 		System.out.println("Managing CONTACTS");
@@ -64,6 +109,32 @@ public class manageIncomincTraffic extends Thread {
 		this.xmlDoc = doc;
 	}
 
+	/**
+	 * Konstruktor klasy zajmujący się ustalaniem wartości pól dla wiadomości
+	 * END
+	 * 
+	 * @param type
+	 *            Typ wiadomości
+	 * @param doc
+	 *            Obiekt typu Document zawierający przesyłaną wiadomość jako XML
+	 * @param cList
+	 *            Lista zalogowanych(aktywnych) użytkowników
+	 * @param l
+	 *            Dodatkowy, nie używany obecnie parametr
+	 */
+	public manageIncomincTraffic(String type, Document doc, ClientList cList,
+			int l) {
+		super("END thread");
+		System.out.println("Managing END message");
+		this.type = type;
+		this.cl = cList;
+		this.xmlDoc = doc;
+	}
+
+	/**
+	 * Metoda 'run' to główna metoda wykonywana w wątku. Realizuje ona
+	 * odpowiednie działania w zależności od typu wiadomości.
+	 */
 	public void run() {
 		if (type.equals("LOG")) {
 			auth();
@@ -71,9 +142,28 @@ public class manageIncomincTraffic extends Thread {
 			fwMsg();
 		} else if (type.equals("CONTACTS")) {
 			activeContacts();
+		} else if (type.equals("END")) {
+			endConversation();
 		}
 	}
 
+	/**
+	 * Metoda zajmująca się zakańczaniem połączenia z wylogowywującym się
+	 * klientem.
+	 */
+	private void endConversation() {
+		Element root = xmlDoc.getRootElement();
+		String nadawca = root.getAttributeValue("nadawca");
+		System.out.println("usuwam " + nadawca + " z listy zalogowanych.");
+
+		cl.remove(new Client(nadawca));
+
+	}
+
+	/**
+	 * Metoda na podstawie przyjętej listy kontaktów odsyła liste tylko tych,
+	 * którzy są obecnie zalogowani
+	 */
 	private void activeContacts() {
 		/*
 		 * SAXBuilder sax = new SAXBuilder(); Reader r = new StringReader(doc);
@@ -91,23 +181,30 @@ public class manageIncomincTraffic extends Thread {
 
 		outMsg.setAttribute(new Attribute("date", new SimpleDateFormat(
 				"yyyy-MM-dd HH:mm:ss").format(new Date())));
+		outMsg.setAttribute(new Attribute("type", "CONTACTS"));
+
+		Element content = new Element("content");
 
 		@SuppressWarnings("unchecked")
 		List<Element> kontakty = inContent.getChildren("kontakt");
 		System.out.println("ilosc odebranych kontaktów: " + kontakty.size());
+		int qtyOfActive = 0;
 		for (int i = 0; i < kontakty.size(); i++) {
 
 			Element kontakt = (Element) kontakty.get(i);
 			System.out.print(">> kontakt: " + kontakt.getValue() + " is ");
 
 			if (cl.isActive(new Client(kontakt.getValue()))) {
-				outMsg.addContent(new Element("kontakt").addContent(kontakt
+				qtyOfActive++;
+				content.addContent(new Element("kontakt").addContent(kontakt
 						.getValue()));
 				System.out.println("active.");
 			} else {
 				System.out.println("not active");
 			}
 		}
+
+		outMsg.setContent(content);
 
 		XMLOutputter out = new XMLOutputter(Format.getPrettyFormat());
 		StringWriter sw = new StringWriter();
@@ -119,8 +216,12 @@ public class manageIncomincTraffic extends Thread {
 
 			System.out.println("cList: ");
 			cl.print();
+
+			System.out.println("odsyłam kontakty dla: " + nadawca);
+
 			int index = cl.getClientIndex(new Client(nadawca));
-			if (index != -1) {
+			System.out.println("index nadawcy kontaktów: " + index);
+			if (index != -1 && qtyOfActive != -1) {
 
 				Socket s = cl.getClient(index).getToClientSocket();
 				pw = new PrintWriter(s.getOutputStream());
@@ -128,7 +229,6 @@ public class manageIncomincTraffic extends Thread {
 				System.out.println(sw.toString());
 				pw.write(sw.toString());
 				pw.flush();
-				// }
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -136,6 +236,9 @@ public class manageIncomincTraffic extends Thread {
 
 	}
 
+	/**
+	 * Metoda przekazująca wiadomość do odpowiedniego użytkownika.
+	 */
 	private void fwMsg() {
 
 		SAXBuilder sax = new SAXBuilder();
@@ -165,7 +268,8 @@ public class manageIncomincTraffic extends Thread {
 				e.printStackTrace();
 			}
 		} else {
-			prepareNotDelivered(recipient, sender);
+			System.out.println("Użytkownik niezalogowany");
+			doc = prepareNotDelivered(recipient, sender);
 
 			index = cl.getClientIndex(new Client(sender));
 			try {
@@ -179,6 +283,16 @@ public class manageIncomincTraffic extends Thread {
 		}
 	}
 
+	/**
+	 * Metoda Tworząca odpowiedź na wiadomość typu MSG, gdy adresat jest
+	 * niedostępny(niezalogowany)
+	 * 
+	 * @param recipient
+	 *            Odbiorca
+	 * @param sender
+	 *            Nadawca
+	 * @return Zwraca utworzoną wiadomość reprezentowaną jako ciąg znakowy.
+	 */
 	private String prepareNotDelivered(String recipient, String sender) {
 		Element message = new Element("message");
 		Document xdoc = new Document(message);
@@ -203,6 +317,9 @@ public class manageIncomincTraffic extends Thread {
 		return sw.toString();
 	}
 
+	/**
+	 * Metoda realizująca logowanie(autoryzowanie) klienta.
+	 */
 	private void auth() {
 		// sc.connect();
 		String xmlMsg = null;

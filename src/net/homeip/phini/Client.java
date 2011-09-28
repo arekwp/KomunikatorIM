@@ -2,19 +2,41 @@ package net.homeip.phini;
 
 import java.net.Socket;
 
+/**
+ * Klasa reprezentująca obiekt klienta i przechowywująca o nim podstawowe dane
+ * takie jak dwa gniazda dla połączeń przychodzących/wychodzących oraz login
+ * 
+ * @author phini
+ * 
+ */
 public class Client {
 
 	private Socket toClientSocket;
 	private Socket fromClientSocket;
 	private String login;
 
+	/**
+	 * Konstruktor klasy Client
+	 * 
+	 * @param l
+	 *            String - Login
+	 * @param in
+	 *            Socket - gniazdo obsługujące połączenia przychodzące do
+	 *            serwera(od klienta)
+	 */
 	public Client(String l, Socket in) {
 		this.setFromClientSocket(in);
 		this.login = l;
 	}
 
-	public Client(String recipient) {
-		this.login = recipient;
+	/**
+	 * Konstruktor klasy Client
+	 * 
+	 * @param l
+	 *            String - nazwa klienta
+	 */
+	public Client(String l) {
+		this.login = l;
 	}
 
 	/**

@@ -4,9 +4,22 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 
+/**
+ * Główna klasa programu. Patrz opis metody "main" znajdującej się w poniższej
+ * klasie.
+ * 
+ * @author Arkadiusz Wiesner
+ * 
+ */
 public class Main {
 
 	/**
+	 * Głowna metoda programu serwera. Jej podstawowe działania: 1) Otwiera
+	 * połączenie z bazą danych(a jeśli ona nie istnieje to ją tworzy). 2)
+	 * Oczekuje na połączenie z klientem, a gdy to nastąpi uruchamia odpowiedni
+	 * wątek, któremu przekazuje gniazdo połączenia i który kontynuuje
+	 * przetwarzanie danych.
+	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {

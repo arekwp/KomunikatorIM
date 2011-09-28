@@ -6,11 +6,18 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.Socket;
+import java.net.SocketException;
 
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
 
+/**
+ * Klasa realizująca odbieranie danych od klienta
+ * 
+ * @author Arkadiusz Wiesner
+ * 
+ */
 public class ClientThreadIn extends Thread {
 
 	private Socket inSocket;
@@ -19,15 +26,38 @@ public class ClientThreadIn extends Thread {
 
 	private Client client;
 
+	/**
+	 * Wątek odbierający dane, startujący kiedy klient nawiąże połączenie
+	 * 
+	 * @param soc
+	 *            Gniazdo na którym klient nawiązał połączenie
+	 * @param clientList
+	 *            Lista zalogowanych(aktywnych) klientów
+	 * @param sc
+	 *            Połączenie z bazą danych
+	 */
 	public ClientThreadIn(Socket soc, ClientList clientList, sqlConnection sc) {
 
 		super("ClientThread");
 		this.inSocket = soc;
 		cList = clientList;
 
+		try {
+			this.inSocket.setKeepAlive(true);
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
+
 		this.sc = sc;
 	}
 
+	/**
+	 * 
+	 * Metoda 'run' to główna metoda wykonywana w wątku Służy ona do odbierania
+	 * danych od klientów i odpowiedniego zarządzania odebranymi danymi tzn,
+	 * odbiera dane i przekazuje je do wątku, który dalej je przetwarza.
+	 * 
+	 */
 	public void run() {
 		try {
 			while (true) {
@@ -43,11 +73,15 @@ public class ClientThreadIn extends Thread {
 
 					while (!done) {
 						String str = input.readLine();
-						if (str.equals("</message>") || str == null)
+						// if (str.equals("") || str == null)
+						if (str.equals("</message>"))
 							break;
-						wholeLine += str + "\n";
+						if (!str.equals("") && !str.equals("\n"))
+							wholeLine += str + "\n";
 					}
 					wholeLine += "</message>\n";
+					// wholeLine = wholeLine.substring(0, wholeLine.length() -
+					// 1);
 					System.out.println("wholeline: " + wholeLine);
 
 					SAXBuilder builder = new SAXBuilder();
@@ -118,16 +152,24 @@ public class ClientThreadIn extends Thread {
 								.start();
 					} else if (type.equals("CONTACTS")) {
 						new manageIncomincTraffic(type, doc, cList).start();
+					} else if (type.equals("END")) {
+						new manageIncomincTraffic(type, doc, cList, 1).start();
 					}
 				}
 
 			} // while -> incoming msg
-		} catch (Exception e) {
-			if (client != null) {
+		} catch (Exception e) { // jesli wystąpni wyjątek, np utracone
+								// polaczenie z klientem, zamkniete gniazdo to
+			if (client != null) { // usuwam klienta z listy zalogowanych i
+									// zamykam gniazdo po stronie serwera(o ile
+									// jest otwarte)
 				int index = cList.getClientIndex(client);
 
-				if (index > 0) {
+				if (index > 0) { // jeśli nadal widnieje jako zalogowany..
+					System.out.println("Błąd: klient " + client.getLogin()
+							+ " zostaje usuniety z listy");
 					cList.remove(cList.getClient(index));
+					// klient zostaje usuniety z listy dostepnych
 				}
 			}
 			try {
