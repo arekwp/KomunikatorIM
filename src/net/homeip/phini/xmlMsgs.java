@@ -53,4 +53,56 @@ public class xmlMsgs {
 		return sw.toString();
 	}
 
+	public static String createRegMsg(String tresc) {
+		StringWriter sw = new StringWriter();
+		Element message = new Element("message");
+		Document xDoc = new Document(message);
+
+		message.setAttribute(new Attribute("type", "REG"));
+		message.addContent(new Element("content").setText(tresc));
+
+		XMLOutputter out = new XMLOutputter(Format.getPrettyFormat());
+
+		try {
+			out.output(xDoc, sw);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return sw.toString();
+	}
+
+	/**
+	 * Metoda Tworząca odpowiedź na wiadomość typu MSG, gdy adresat jest
+	 * niedostępny(niezalogowany)
+	 * 
+	 * @param recipient
+	 *            Odbiorca
+	 * @param sender
+	 *            Nadawca
+	 * @return Zwraca utworzoną wiadomość reprezentowaną jako ciąg znakowy.
+	 */
+	public static String prepareNotDelivered(String recipient, String sender) {
+		Element message = new Element("message");
+		Document xdoc = new Document(message);
+
+		message.setAttribute(new Attribute("type", "MSG"));
+		message.setAttribute(new Attribute("date", new SimpleDateFormat(
+				"yyyy-MM-dd HH:mm:ss").format(new Date())));
+		message.setAttribute(new Attribute("nadawca", recipient));
+		message.setAttribute(new Attribute("odbiorca", sender));
+		message.addContent(new Element("content")
+				.setText("Serwer: Odbiorca niezalogowany."));
+
+		StringWriter sw = new StringWriter();
+		XMLOutputter out = new XMLOutputter(Format.getPrettyFormat());
+
+		try {
+			out.output(xdoc, sw);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return sw.toString();
+	}
 }

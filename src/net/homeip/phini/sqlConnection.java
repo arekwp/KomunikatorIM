@@ -167,4 +167,15 @@ public class sqlConnection {
 
 	}
 
+	public void add(String login, String pass) {
+		String sql = "INSERT INTO logpas VALUES('" + login + "', '" + pass
+				+ "');";
+
+		try {
+			st.executeUpdate(sql);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+	}
 }

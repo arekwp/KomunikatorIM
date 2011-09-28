@@ -131,6 +131,16 @@ public class manageIncomincTraffic extends Thread {
 		this.xmlDoc = doc;
 	}
 
+	public manageIncomincTraffic(String type, Document xDoc, sqlConnection sc,
+			Socket s) {
+		super("REG thread");
+		System.out.println("Managing REG message");
+		this.xmlDoc = xDoc;
+		this.type = type;
+		this.sc = sc;
+		this.inSocket = s;
+	}
+
 	/**
 	 * Metoda 'run' to główna metoda wykonywana w wątku. Realizuje ona
 	 * odpowiednie działania w zależności od typu wiadomości.
@@ -144,6 +154,32 @@ public class manageIncomincTraffic extends Thread {
 			activeContacts();
 		} else if (type.equals("END")) {
 			endConversation();
+		} else if (type.equals("REG")) {
+			register();
+		}
+	}
+
+	private void register() {
+		System.out.println("rejestrowanie uzytkownika");
+		Element root = xmlDoc.getRootElement();
+
+		login = root.getChild("content").getChild("login").getValue();
+		pass = root.getChild("content").getChild("pass").getValue();
+		try {
+			PrintWriter pw = new PrintWriter(inSocket.getOutputStream());
+
+			if (sc.userExists(login)) {
+				String tmp = xmlMsgs.createRegMsg("ERRUE");
+				pw.write(tmp);
+				pw.flush();
+			} else {
+				sc.add(login, pass);
+				String tmp = xmlMsgs.createRegMsg("OK");
+				pw.write(tmp);
+				pw.flush();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -269,7 +305,7 @@ public class manageIncomincTraffic extends Thread {
 			}
 		} else {
 			System.out.println("Użytkownik niezalogowany");
-			doc = prepareNotDelivered(recipient, sender);
+			doc = xmlMsgs.prepareNotDelivered(recipient, sender);
 
 			index = cl.getClientIndex(new Client(sender));
 			try {
@@ -281,40 +317,6 @@ public class manageIncomincTraffic extends Thread {
 			}
 
 		}
-	}
-
-	/**
-	 * Metoda Tworząca odpowiedź na wiadomość typu MSG, gdy adresat jest
-	 * niedostępny(niezalogowany)
-	 * 
-	 * @param recipient
-	 *            Odbiorca
-	 * @param sender
-	 *            Nadawca
-	 * @return Zwraca utworzoną wiadomość reprezentowaną jako ciąg znakowy.
-	 */
-	private String prepareNotDelivered(String recipient, String sender) {
-		Element message = new Element("message");
-		Document xdoc = new Document(message);
-
-		message.setAttribute(new Attribute("type", "MSG"));
-		message.setAttribute(new Attribute("date", new SimpleDateFormat(
-				"yyyy-MM-dd HH:mm:ss").format(new Date())));
-		message.setAttribute(new Attribute("nadawca", recipient));
-		message.setAttribute(new Attribute("odbiorca", sender));
-		message.addContent(new Element("content")
-				.setText("Serwer: Odbiorca niezalogowany."));
-
-		StringWriter sw = new StringWriter();
-		XMLOutputter out = new XMLOutputter(Format.getPrettyFormat());
-
-		try {
-			out.output(xdoc, sw);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return sw.toString();
 	}
 
 	/**

@@ -80,8 +80,7 @@ public class ClientThreadIn extends Thread {
 							wholeLine += str + "\n";
 					}
 					wholeLine += "</message>\n";
-					// wholeLine = wholeLine.substring(0, wholeLine.length() -
-					// 1);
+
 					System.out.println("wholeline: " + wholeLine);
 
 					SAXBuilder builder = new SAXBuilder();
@@ -93,7 +92,7 @@ public class ClientThreadIn extends Thread {
 
 					String type = root.getAttributeValue("type");
 
-					System.out.println("root elem: " + type);
+					System.out.println("type: " + type);
 
 					if (type.equals("LOG")) {
 
@@ -116,19 +115,8 @@ public class ClientThreadIn extends Thread {
 						System.out.println("login = " + login + ", pass = "
 								+ pass);
 
-						// new manageIncomincTraffic(type, pass, new
-						// Client(login,
-						// inSocket), sc, cList).start();
-
-						// PrintWriter pw = new PrintWriter(
-						// inSocket.getOutputStream());
-
-						// String xmlMsg = null;
 						if (sc.auth(login, pass)) {
 							System.out.println("LOGGED2");
-							// xmlMsg = xmlMsgs.createAuthMsg("LOGGED2");
-							// cl.add(new Client(login, inSocket)); //
-							// sychronized
 
 							int index = cList.getClientIndex(new Client(login));
 
@@ -138,28 +126,27 @@ public class ClientThreadIn extends Thread {
 									+ inSocket.getInetAddress());
 							cList.getClient(index).setToClientSocket(inSocket);
 						} else {
-							// xmlMsg = xmlMsgs.createAuthMsg("ERROR2");
+
 						}
 
-						// pw.write(xmlMsg + "\n");
-
-						// pw.flush();
-
 					} else if (type.equals("MSG")) {
-						// String receiver = root.getAttributeValue("odbiorca");
-
 						new manageIncomincTraffic(type, wholeLine, cList)
 								.start();
 					} else if (type.equals("CONTACTS")) {
 						new manageIncomincTraffic(type, doc, cList).start();
 					} else if (type.equals("END")) {
-						new manageIncomincTraffic(type, doc, cList, 1).start();
+						new manageIncomincTraffic(type, doc, cList).start();
+					} else if (type.equals("REG")) {
+						new manageIncomincTraffic(type, doc, sc, inSocket)
+								.start();
 					}
 				}
 
 			} // while -> incoming msg
-		} catch (Exception e) { // jesli wystąpni wyjątek, np utracone
-								// polaczenie z klientem, zamkniete gniazdo to
+		} catch (Exception e) {
+			System.out.println("wyjątek,usuwa klienta, zamykam połączenie");
+			// jesli wystąpni wyjątek, np utracone
+			// polaczenie z klientem, zamkniete gniazdo to
 			if (client != null) { // usuwam klienta z listy zalogowanych i
 									// zamykam gniazdo po stronie serwera(o ile
 									// jest otwarte)
